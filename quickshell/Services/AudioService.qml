@@ -576,7 +576,7 @@ Singleton {
 
             const currentVolume = Math.round(root.sink.audio.volume * 100);
             const stepValue = parseInt(step || "5");
-            const newVolume = Math.max(0, Math.min(100, currentVolume + stepValue));
+            const newVolume = Math.max(0, Math.min(150, currentVolume + stepValue));
 
             root.sink.audio.volume = newVolume / 100;
             return `Volume increased to ${newVolume}%`;
@@ -593,7 +593,7 @@ Singleton {
 
             const currentVolume = Math.round(root.sink.audio.volume * 100);
             const stepValue = parseInt(step || "5");
-            const newVolume = Math.max(0, Math.min(100, currentVolume - stepValue));
+            const newVolume = Math.max(0, Math.min(150, currentVolume - stepValue));
 
             root.sink.audio.volume = newVolume / 100;
             return `Volume decreased to ${newVolume}%`;
