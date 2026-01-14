@@ -69,6 +69,7 @@ Item {
 
     property int _desktopEntriesUpdateTrigger: 0
     property int _toplevelsUpdateTrigger: 0
+    property int _appIdSubstitutionsTrigger: 0
 
     readonly property var sortedToplevels: {
         _toplevelsUpdateTrigger;
@@ -93,6 +94,13 @@ Item {
         target: DesktopEntries
         function onApplicationsChanged() {
             _desktopEntriesUpdateTrigger++;
+        }
+    }
+
+    Connections {
+        target: SettingsData
+        function onAppIdSubstitutionsChanged() {
+            _appIdSubstitutionsTrigger++;
         }
     }
     readonly property var groupedWindows: {
@@ -364,6 +372,7 @@ Item {
                             height: Theme.barIconSize(root.barThickness)
                             source: {
                                 root._desktopEntriesUpdateTrigger;
+                                root._appIdSubstitutionsTrigger;
                                 if (!appId)
                                     return "";
                                 const moddedId = Paths.moddedAppId(appId);
@@ -384,27 +393,9 @@ Item {
                             }
                         }
 
-                        DankIcon {
-                            anchors.left: parent.left
-                            anchors.leftMargin: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? Math.round((parent.width - Theme.barIconSize(root.barThickness)) / 2) : Theme.spacingXS
-                            anchors.verticalCenter: parent.verticalCenter
-                            size: Theme.barIconSize(root.barThickness)
-                            name: "sports_esports"
-                            color: Theme.widgetTextColor
-                            visible: {
-                                const moddedId = Paths.moddedAppId(appId);
-                                return moddedId.toLowerCase().includes("steam_app");
-                            }
-                        }
-
-                        // Fallback text if no icon found
                         Text {
                             anchors.centerIn: parent
-                            visible: {
-                                const moddedId = Paths.moddedAppId(appId);
-                                const isSteamApp = moddedId.toLowerCase().includes("steam_app");
-                                return !iconImg.visible && !isSteamApp;
-                            }
+                            visible: !iconImg.visible
                             text: {
                                 root._desktopEntriesUpdateTrigger;
                                 if (!appId)
@@ -502,8 +493,10 @@ Item {
                                         const globalPos = delegateItem.mapToGlobal(delegateItem.width / 2, 0);
                                         const screenX = root.parentScreen ? root.parentScreen.x : 0;
                                         const relativeX = globalPos.x - screenX;
-                                        const yPos = root.barThickness + root.barSpacing - 7;
-                                        windowContextMenuLoader.item.showAt(relativeX, yPos, false, "top");
+                                        const screenHeight = root.parentScreen ? root.parentScreen.height : Screen.height;
+                                        const isBottom = root.axis?.edge === "bottom";
+                                        const yPos = isBottom ? (screenHeight - root.barThickness - root.barSpacing - 32 - Theme.spacingXS) : (root.barThickness + root.barSpacing + Theme.spacingXS);
+                                        windowContextMenuLoader.item.showAt(relativeX, yPos, false, root.axis?.edge);
                                     }
                                 }
                             } else if (mouse.button === Qt.MiddleButton) {
@@ -614,6 +607,7 @@ Item {
                             height: Theme.barIconSize(root.barThickness)
                             source: {
                                 root._desktopEntriesUpdateTrigger;
+                                root._appIdSubstitutionsTrigger;
                                 if (!appId)
                                     return "";
                                 const moddedId = Paths.moddedAppId(appId);
@@ -634,26 +628,9 @@ Item {
                             }
                         }
 
-                        DankIcon {
-                            anchors.left: parent.left
-                            anchors.leftMargin: (widgetData?.runningAppsCompactMode !== undefined ? widgetData.runningAppsCompactMode : SettingsData.runningAppsCompactMode) ? Math.round((parent.width - Theme.barIconSize(root.barThickness)) / 2) : Theme.spacingXS
-                            anchors.verticalCenter: parent.verticalCenter
-                            size: Theme.barIconSize(root.barThickness)
-                            name: "sports_esports"
-                            color: Theme.widgetTextColor
-                            visible: {
-                                const moddedId = Paths.moddedAppId(appId);
-                                return moddedId.toLowerCase().includes("steam_app");
-                            }
-                        }
-
                         Text {
                             anchors.centerIn: parent
-                            visible: {
-                                const moddedId = Paths.moddedAppId(appId);
-                                const isSteamApp = moddedId.toLowerCase().includes("steam_app");
-                                return !iconImg.visible && !isSteamApp;
-                            }
+                            visible: !iconImg.visible
                             text: {
                                 root._desktopEntriesUpdateTrigger;
                                 if (!appId)
@@ -751,8 +728,10 @@ Item {
                                         const globalPos = delegateItem.mapToGlobal(delegateItem.width / 2, 0);
                                         const screenX = root.parentScreen ? root.parentScreen.x : 0;
                                         const relativeX = globalPos.x - screenX;
-                                        const yPos = root.barThickness + root.barSpacing - 7;
-                                        windowContextMenuLoader.item.showAt(relativeX, yPos, false, "top");
+                                        const screenHeight = root.parentScreen ? root.parentScreen.height : Screen.height;
+                                        const isBottom = root.axis?.edge === "bottom";
+                                        const yPos = isBottom ? (screenHeight - root.barThickness - root.barSpacing - 32 - Theme.spacingXS) : (root.barThickness + root.barSpacing + Theme.spacingXS);
+                                        windowContextMenuLoader.item.showAt(relativeX, yPos, false, root.axis?.edge);
                                     }
                                 }
                             }

@@ -131,7 +131,7 @@ Item {
         if (DMSService.dmsAvailable)
             DMSService.listInstalledThemes();
         if (PopoutService.pendingThemeInstall)
-            Qt.callLater(() => themeBrowser.show());
+            Qt.callLater(() => showThemeBrowser());
         templateCheckProcess.running = true;
         if (CompositorService.isNiri || CompositorService.isHyprland || CompositorService.isDwl)
             checkCursorIncludeStatus();
@@ -169,7 +169,7 @@ Item {
         target: PopoutService
         function onPendingThemeInstallChanged() {
             if (PopoutService.pendingThemeInstall)
-                themeBrowser.show();
+                showThemeBrowser();
         }
     }
 
@@ -307,7 +307,7 @@ Item {
 
                     Item {
                         width: parent.width
-                        height: genericColorGrid.implicitHeight
+                        height: genericColorGrid.implicitHeight + Math.ceil(genericColorGrid.dotSize * 0.05)
                         visible: Theme.currentThemeCategory === "generic" && Theme.currentTheme !== Theme.dynamic && Theme.currentThemeName !== "custom"
 
                         Grid {
@@ -939,7 +939,7 @@ Item {
                             text: I18n.tr("Browse Themes", "browse themes button")
                             iconName: "store"
                             anchors.horizontalCenter: parent.horizontalCenter
-                            onClicked: themeBrowser.show()
+                            onClicked: showThemeBrowser()
                         }
                     }
                 }
@@ -2041,7 +2041,18 @@ Item {
         }
     }
 
-    ThemeBrowser {
-        id: themeBrowser
+    LazyLoader {
+        id: themeBrowserLoader
+        active: false
+
+        ThemeBrowser {
+            id: themeBrowserItem
+        }
+    }
+
+    function showThemeBrowser() {
+        themeBrowserLoader.active = true;
+        if (themeBrowserLoader.item)
+            themeBrowserLoader.item.show();
     }
 }
