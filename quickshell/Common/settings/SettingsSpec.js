@@ -70,6 +70,7 @@ var SPEC = {
     controlCenterShowMicPercent: { def: false },
     controlCenterShowBatteryIcon: { def: false },
     controlCenterShowPrinterIcon: { def: false },
+    controlCenterShowScreenSharingIcon: { def: true },
 
     showPrivacyButton: { def: true },
     privacyShowMicIcon: { def: false },
@@ -99,6 +100,7 @@ var SPEC = {
     reverseScrolling: { def: false },
     dwlShowAllTags: { def: false },
     workspaceColorMode: { def: "default" },
+    workspaceOccupiedColorMode: { def: "none" },
     workspaceUnfocusedColorMode: { def: "default" },
     workspaceUrgentColorMode: { def: "default" },
     workspaceFocusedBorderEnabled: { def: false },
@@ -230,6 +232,7 @@ var SPEC = {
 
     showDock: { def: false },
     dockAutoHide: { def: false },
+    dockSmartAutoHide: { def: false },
     dockGroupByApp: { def: false },
     dockOpenOnOverview: { def: false },
     dockPosition: { def: 1 },
@@ -257,6 +260,7 @@ var SPEC = {
     lockScreenShowDate: { def: true },
     lockScreenShowProfileImage: { def: true },
     lockScreenShowPasswordField: { def: true },
+    lockScreenPowerOffMonitorsOnLock: { def: false },
     enableFprint: { def: false },
     maxFprintTries: { def: 15 },
     fprintdAvailable: { def: false, persist: false },
@@ -354,7 +358,8 @@ var SPEC = {
         shadowIntensity: 0,
         shadowOpacity: 60,
         shadowColorMode: "text",
-        shadowCustomColor: "#000000"
+        shadowCustomColor: "#000000",
+        clickThrough: false
     }], onChange: "updateBarConfigs" },
 
     desktopClockEnabled: { def: false },

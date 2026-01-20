@@ -265,6 +265,7 @@ Item {
 
             if (!byApp[key]) {
                 const isQuickshell = keyBase === "org.quickshell";
+                const isSteamApp = Paths.isSteamApp(keyBase);
                 const moddedId = Paths.moddedAppId(keyBase);
                 const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
                 const icon = Paths.getAppIcon(keyBase, desktopEntry);
@@ -272,6 +273,7 @@ Item {
                     "type": "icon",
                     "icon": icon,
                     "isQuickshell": isQuickshell,
+                    "isSteamApp": isSteamApp,
                     "active": !!((w.activated || w.is_focused) || (CompositorService.isNiri && w.is_focused)),
                     "count": 1,
                     "windowId": w.address || w.id,
@@ -729,7 +731,8 @@ Item {
     Flow {
         id: workspaceRow
 
-        anchors.centerIn: parent
+        x: isVertical ? visualBackground.x : (parent.width - implicitWidth) / 2
+        y: isVertical ? (parent.height - implicitHeight) / 2 : visualBackground.y
         spacing: Theme.spacingS
         flow: isVertical ? Flow.TopToBottom : Flow.LeftToRight
 
@@ -751,6 +754,17 @@ Item {
                     if (CompositorService.isSway || CompositorService.isScroll)
                         return !!(modelData && modelData.num === root.currentWorkspace);
                     return modelData === root.currentWorkspace;
+                }
+                property bool isOccupied: {
+                    if (CompositorService.isHyprland)
+                        return Array.from(Hyprland.toplevels?.values || []).some(tl => tl.workspace?.id === modelData?.id);
+                    if (CompositorService.isDwl)
+                        return modelData.clients > 0;
+                    if (CompositorService.isNiri) {
+                        const workspace = NiriService.allWorkspaces.find(ws => ws.idx + 1 === modelData && ws.output === root.effectiveScreenName);
+                        return workspace ? (NiriService.windows?.some(win => win.workspace_id === workspace.id) ?? false) : false;
+                    }
+                    return false;
                 }
                 property bool isPlaceholder: {
                     if (root.useExtWorkspace)
@@ -830,6 +844,23 @@ Item {
                         return unfocusedColor;
                     default:
                         return Theme.primary;
+                    }
+                }
+
+                readonly property color occupiedColor: {
+                    switch (SettingsData.workspaceOccupiedColorMode) {
+                    case "sec":
+                        return Theme.secondary;
+                    case "s":
+                        return Theme.surface;
+                    case "sc":
+                        return Theme.surfaceContainer;
+                    case "sch":
+                        return Theme.surfaceContainerHigh;
+                    case "schh":
+                        return Theme.surfaceContainerHighest;
+                    default:
+                        return unfocusedColor;
                     }
                 }
 
@@ -966,12 +997,13 @@ Item {
                     dataUpdateTimer.restart();
                 }
 
-                width: root.isVertical ? root.barThickness : visualWidth
-                height: root.isVertical ? visualHeight : root.barThickness
+                width: root.isVertical ? root.widgetHeight : visualWidth
+                height: root.isVertical ? visualHeight : root.widgetHeight
 
                 Rectangle {
                     id: focusedBorderRing
-                    anchors.centerIn: parent
+                    x: root.isVertical ? (root.widgetHeight - width) / 2 : (parent.width - width) / 2
+                    y: root.isVertical ? (parent.height - height) / 2 : (root.widgetHeight - height) / 2
                     width: {
                         const borderWidth = (SettingsData.workspaceFocusedBorderEnabled && isActive && !isPlaceholder) ? SettingsData.workspaceFocusedBorderThickness : 0;
                         return delegateRoot.visualWidth + borderWidth * 2;
@@ -1018,9 +1050,10 @@ Item {
                     id: visualContent
                     width: delegateRoot.visualWidth
                     height: delegateRoot.visualHeight
-                    anchors.centerIn: parent
+                    x: root.isVertical ? (root.widgetHeight - width) / 2 : (parent.width - width) / 2
+                    y: root.isVertical ? (parent.height - height) / 2 : (root.widgetHeight - height) / 2
                     radius: Theme.cornerRadius
-                    color: isActive ? activeColor : isUrgent ? urgentColor : isPlaceholder ? Theme.surfaceTextLight : isHovered ? Theme.withAlpha(unfocusedColor, 0.7) : unfocusedColor
+                    color: isActive ? activeColor : isUrgent ? urgentColor : isPlaceholder ? Theme.surfaceTextLight : isHovered ? Theme.withAlpha(unfocusedColor, 0.7) : isOccupied ? occupiedColor : unfocusedColor
 
                     border.width: isUrgent ? 2 : 0
                     border.color: isUrgent ? urgentColor : "transparent"
@@ -1135,7 +1168,7 @@ Item {
                                                 anchors.fill: parent
                                                 source: modelData.icon
                                                 opacity: modelData.active ? 1.0 : rowAppMouseArea.containsMouse ? 0.8 : 0.6
-                                                visible: !modelData.isQuickshell
+                                                visible: !modelData.isQuickshell && !modelData.isSteamApp
                                             }
 
                                             IconImage {
@@ -1149,6 +1182,22 @@ Item {
                                                     colorization: 1
                                                     colorizationColor: isActive ? quickshellIconActiveColor : quickshellIconInactiveColor
                                                 }
+                                            }
+
+                                            IconImage {
+                                                anchors.fill: parent
+                                                source: modelData.icon
+                                                opacity: modelData.active ? 1.0 : rowAppMouseArea.containsMouse ? 0.8 : 0.6
+                                                visible: modelData.isSteamApp && modelData.icon
+                                            }
+
+                                            DankIcon {
+                                                anchors.centerIn: parent
+                                                size: root.appIconSize
+                                                name: "sports_esports"
+                                                color: Theme.widgetTextColor
+                                                opacity: modelData.active ? 1.0 : rowAppMouseArea.containsMouse ? 0.8 : 0.6
+                                                visible: modelData.isSteamApp && !modelData.icon
                                             }
 
                                             MouseArea {
@@ -1229,7 +1278,7 @@ Item {
                                                 anchors.fill: parent
                                                 source: modelData.icon
                                                 opacity: modelData.active ? 1.0 : colAppMouseArea.containsMouse ? 0.8 : 0.6
-                                                visible: !modelData.isQuickshell
+                                                visible: !modelData.isQuickshell && !modelData.isSteamApp
                                             }
 
                                             IconImage {
@@ -1243,6 +1292,22 @@ Item {
                                                     colorization: 1
                                                     colorizationColor: isActive ? quickshellIconActiveColor : quickshellIconInactiveColor
                                                 }
+                                            }
+
+                                            IconImage {
+                                                anchors.fill: parent
+                                                source: modelData.icon
+                                                opacity: modelData.active ? 1.0 : colAppMouseArea.containsMouse ? 0.8 : 0.6
+                                                visible: modelData.isSteamApp && modelData.icon
+                                            }
+
+                                            DankIcon {
+                                                anchors.centerIn: parent
+                                                size: root.appIconSize
+                                                name: "sports_esports"
+                                                color: Theme.widgetTextColor
+                                                opacity: modelData.active ? 1.0 : colAppMouseArea.containsMouse ? 0.8 : 0.6
+                                                visible: modelData.isSteamApp && !modelData.icon
                                             }
 
                                             MouseArea {

@@ -145,6 +145,7 @@ Singleton {
     property bool controlCenterShowMicPercent: true
     property bool controlCenterShowBatteryIcon: false
     property bool controlCenterShowPrinterIcon: false
+    property bool controlCenterShowScreenSharingIcon: true
     property bool showPrivacyButton: true
     property bool privacyShowMicIcon: false
     property bool privacyShowCameraIcon: false
@@ -205,6 +206,7 @@ Singleton {
     property bool reverseScrolling: false
     property bool dwlShowAllTags: false
     property string workspaceColorMode: "default"
+    property string workspaceOccupiedColorMode: "none"
     property string workspaceUnfocusedColorMode: "default"
     property string workspaceUrgentColorMode: "default"
     property bool workspaceFocusedBorderEnabled: false
@@ -365,6 +367,7 @@ Singleton {
 
     property bool showDock: false
     property bool dockAutoHide: false
+    property bool dockSmartAutoHide: false
     property bool dockGroupByApp: false
     property bool dockOpenOnOverview: false
     property int dockPosition: SettingsData.Position.Bottom
@@ -392,6 +395,7 @@ Singleton {
     property bool lockScreenShowDate: true
     property bool lockScreenShowProfileImage: true
     property bool lockScreenShowPasswordField: true
+    property bool lockScreenPowerOffMonitorsOnLock: false
 
     property bool enableFprint: false
     property int maxFprintTries: 15
@@ -491,7 +495,8 @@ Singleton {
             "shadowIntensity": 0,
             "shadowOpacity": 60,
             "shadowColorMode": "text",
-            "shadowCustomColor": "#000000"
+            "shadowCustomColor": "#000000",
+            "clickThrough": false
         }
     ]
 

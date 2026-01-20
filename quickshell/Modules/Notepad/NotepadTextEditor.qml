@@ -383,7 +383,7 @@ Column {
 
             TextArea.flickable: TextArea {
                 id: textArea
-                placeholderText: I18n.tr("Start typing your notes here...")
+                placeholderText: ""
                 placeholderTextColor: Qt.rgba(Theme.surfaceText.r, Theme.surfaceText.g, Theme.surfaceText.b, 0.5)
                 font.family: SettingsData.notepadUseMonospace ? SettingsData.monoFontFamily : (SettingsData.notepadFontFamily || SettingsData.fontFamily)
                 font.pixelSize: SettingsData.notepadFontSize * SettingsData.fontScale
@@ -404,6 +404,22 @@ Column {
                 topPadding: Theme.spacingM
                 rightPadding: Theme.spacingM
                 bottomPadding: Theme.spacingM
+                cursorDelegate: Rectangle {
+                    width: 1.5
+                    radius: 1
+                    color: Theme.surfaceText
+                    x: textArea.cursorRectangle.x
+                    y: textArea.cursorRectangle.y
+                    height: textArea.cursorRectangle.height
+                    opacity: 1.0
+
+                    SequentialAnimation on opacity {
+                        running: textArea.activeFocus
+                        loops: Animation.Infinite
+                        PropertyAnimation { from: 1.0; to: 0.0; duration: 650; easing.type: Easing.InOutQuad }
+                        PropertyAnimation { from: 0.0; to: 1.0; duration: 650; easing.type: Easing.InOutQuad }
+                    }
+                }
 
                 Component.onCompleted: {
                     loadCurrentTabContent()
@@ -479,6 +495,20 @@ Column {
                 background: Rectangle {
                     color: "transparent"
                 }
+            }
+
+            StyledText {
+                id: placeholderOverlay
+                text: I18n.tr("Start typing your notes here...")
+                color: Qt.rgba(Theme.surfaceText.r, Theme.surfaceText.g, Theme.surfaceText.b, 0.5)
+                font.family: textArea.font.family
+                font.pixelSize: textArea.font.pixelSize
+                visible: textArea.text.length === 0
+                anchors.left: textArea.left
+                anchors.top: textArea.top
+                anchors.leftMargin: textArea.leftPadding
+                anchors.topMargin: textArea.topPadding
+                z: textArea.z + 1
             }
         }
     }

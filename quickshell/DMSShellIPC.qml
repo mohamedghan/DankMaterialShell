@@ -132,8 +132,11 @@ Item {
                 case "media":
                     root.dankDashPopoutLoader.item.currentTabIndex = 1;
                     break;
+                case "wallpaper":
+                    root.dankDashPopoutLoader.item.currentTabIndex = 2;
+                    break;
                 case "weather":
-                    root.dankDashPopoutLoader.item.currentTabIndex = SettingsData.weatherEnabled ? 2 : 0;
+                    root.dankDashPopoutLoader.item.currentTabIndex = SettingsData.weatherEnabled ? 3 : 0;
                     break;
                 default:
                     root.dankDashPopoutLoader.item.currentTabIndex = 0;
@@ -961,6 +964,17 @@ Item {
 
             const success = PluginService.disablePlugin(pluginId);
             return success ? `PLUGIN_DISABLE_SUCCESS: ${pluginId}` : `PLUGIN_DISABLE_FAILED: ${pluginId}`;
+        }
+
+        function toggle(pluginId: string): string {
+            if (!pluginId)
+                return "ERROR: No plugin ID specified";
+
+            if (!PluginService.availablePlugins[pluginId])
+                return `PLUGIN_NOT_FOUND: ${pluginId}`;
+
+            const success = PluginService.togglePlugin(pluginId);
+            return success ? `PLUGIN_TOGGLE_SUCCESS: ${pluginId}` : `PLUGIN_TOGGLE_FAILED: ${pluginId}`;
         }
 
         function list(): string {
