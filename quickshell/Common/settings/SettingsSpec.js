@@ -32,7 +32,9 @@ var SPEC = {
 
     use24HourClock: { def: true },
     showSeconds: { def: false },
+    padHours12Hour: { def: false },
     useFahrenheit: { def: false },
+    windSpeedUnit: { def: "kmh" },
     nightModeEnabled: { def: false },
     animationSpeed: { def: 1 },
     customAnimationDuration: { def: 500 },
@@ -77,16 +79,18 @@ var SPEC = {
     privacyShowCameraIcon: { def: false },
     privacyShowScreenShareIcon: { def: false },
 
-    controlCenterWidgets: { def: [
-        { id: "volumeSlider", enabled: true, width: 50 },
-        { id: "brightnessSlider", enabled: true, width: 50 },
-        { id: "wifi", enabled: true, width: 50 },
-        { id: "bluetooth", enabled: true, width: 50 },
-        { id: "audioOutput", enabled: true, width: 50 },
-        { id: "audioInput", enabled: true, width: 50 },
-        { id: "nightMode", enabled: true, width: 50 },
-        { id: "darkMode", enabled: true, width: 50 }
-    ]},
+    controlCenterWidgets: {
+        def: [
+            { id: "volumeSlider", enabled: true, width: 50 },
+            { id: "brightnessSlider", enabled: true, width: 50 },
+            { id: "wifi", enabled: true, width: 50 },
+            { id: "bluetooth", enabled: true, width: 50 },
+            { id: "audioOutput", enabled: true, width: 50 },
+            { id: "audioInput", enabled: true, width: 50 },
+            { id: "nightMode", enabled: true, width: 50 },
+            { id: "darkMode", enabled: true, width: 50 }
+        ]
+    },
 
     showWorkspaceIndex: { def: false },
     showWorkspaceName: { def: false },
@@ -94,6 +98,7 @@ var SPEC = {
     workspaceScrolling: { def: false },
     showWorkspaceApps: { def: false },
     maxWorkspaceIcons: { def: 3 },
+    workspaceAppIconSizeOffset: { def: 0 },
     groupWorkspaceApps: { def: true },
     workspaceFollowFocus: { def: false },
     showOccupiedWorkspacesOnly: { def: false },
@@ -117,13 +122,15 @@ var SPEC = {
     keyboardLayoutNameCompactMode: { def: false },
     runningAppsCurrentWorkspace: { def: false },
     runningAppsGroupByApp: { def: false },
-    appIdSubstitutions: { def: [
-        { pattern: "Spotify", replacement: "spotify", type: "exact" },
-        { pattern: "beepertexts", replacement: "beeper", type: "exact" },
-        { pattern: "home assistant desktop", replacement: "homeassistant-desktop", type: "exact" },
-        { pattern: "com.transmissionbt.transmission", replacement: "transmission-gtk", type: "contains" },
-        { pattern: "^steam_app_(\\d+)$", replacement: "steam_icon_$1", type: "regex" }
-    ]},
+    appIdSubstitutions: {
+        def: [
+            { pattern: "Spotify", replacement: "spotify", type: "exact" },
+            { pattern: "beepertexts", replacement: "beeper", type: "exact" },
+            { pattern: "home assistant desktop", replacement: "homeassistant-desktop", type: "exact" },
+            { pattern: "com.transmissionbt.transmission", replacement: "transmission-gtk", type: "contains" },
+            { pattern: "^steam_app_(\\d+)$", replacement: "steam_icon_$1", type: "regex" }
+        ]
+    },
     centeringMode: { def: "index" },
     clockDateFormat: { def: "" },
     lockDateFormat: { def: "" },
@@ -131,16 +138,26 @@ var SPEC = {
 
     appLauncherViewMode: { def: "list" },
     spotlightModalViewMode: { def: "list" },
+    browserPickerViewMode: { def: "grid" },
+    browserUsageHistory: { def: {} },
+    appPickerViewMode: { def: "grid" },
+    filePickerUsageHistory: { def: {} },
     sortAppsAlphabetically: { def: false },
     appLauncherGridColumns: { def: 4 },
     spotlightCloseNiriOverview: { def: true },
+    spotlightSectionViewModes: { def: {} },
+    appDrawerSectionViewModes: { def: {} },
     niriOverviewOverlayEnabled: { def: true },
+    dankLauncherV2Size: { def: "compact" },
+    dankLauncherV2BorderEnabled: { def: false },
+    dankLauncherV2BorderThickness: { def: 2 },
+    dankLauncherV2BorderColor: { def: "primary" },
+    dankLauncherV2ShowFooter: { def: true },
 
     useAutoLocation: { def: false },
     weatherEnabled: { def: true },
 
     networkPreference: { def: "auto" },
-    vpnLastConnected: { def: "" },
 
     iconTheme: { def: "System Default", onChange: "applyStoredIconTheme" },
     availableIconThemes: { def: ["System Default"], persist: false },
@@ -229,6 +246,7 @@ var SPEC = {
     matugenTemplateDgop: { def: true },
     matugenTemplateKcolorscheme: { def: true },
     matugenTemplateVscode: { def: true },
+    matugenTemplateEmacs: { def: true },
 
     showDock: { def: false },
     dockAutoHide: { def: false },
@@ -246,6 +264,13 @@ var SPEC = {
     dockBorderOpacity: { def: 1.0, coerce: percentToUnit },
     dockBorderThickness: { def: 1 },
     dockIsolateDisplays: { def: false },
+    dockLauncherEnabled: { def: false },
+    dockLauncherLogoMode: { def: "apps" },
+    dockLauncherLogoCustomPath: { def: "" },
+    dockLauncherLogoColorOverride: { def: "" },
+    dockLauncherLogoSizeOffset: { def: 0 },
+    dockLauncherLogoBrightness: { def: 0.5, coerce: percentToUnit },
+    dockLauncherLogoContrast: { def: 1, coerce: percentToUnit },
 
     notificationOverlayEnabled: { def: false },
     overviewRows: { def: 2, persist: false },
@@ -260,6 +285,7 @@ var SPEC = {
     lockScreenShowDate: { def: true },
     lockScreenShowProfileImage: { def: true },
     lockScreenShowPasswordField: { def: true },
+    lockScreenShowMediaPlayer: { def: true },
     lockScreenPowerOffMonitorsOnLock: { def: false },
     enableFprint: { def: false },
     maxFprintTries: { def: 15 },
@@ -284,7 +310,7 @@ var SPEC = {
     osdAlwaysShowValue: { def: false },
     osdPosition: { def: 5 },
     osdVolumeEnabled: { def: true },
-    osdMediaVolumeEnabled : { def: true },
+    osdMediaVolumeEnabled: { def: true },
     osdBrightnessEnabled: { def: true },
     osdIdleInhibitorEnabled: { def: true },
     osdMicMuteEnabled: { def: true },
@@ -315,52 +341,54 @@ var SPEC = {
     niriOutputSettings: { def: {} },
     hyprlandOutputSettings: { def: {} },
 
-    barConfigs: { def: [{
-        id: "default",
-        name: "Main Bar",
-        enabled: true,
-        position: 0,
-        screenPreferences: ["all"],
-        showOnLastDisplay: true,
-        leftWidgets: ["launcherButton", "workspaceSwitcher", "focusedWindow"],
-        centerWidgets: ["music", "clock", "weather"],
-        rightWidgets: ["systemTray", "clipboard", "cpuUsage", "memUsage", "notificationButton", "battery", "controlCenterButton"],
-        spacing: 4,
-        innerPadding: 4,
-        bottomGap: 0,
-        transparency: 1.0,
-        widgetTransparency: 1.0,
-        squareCorners: false,
-        noBackground: false,
-        gothCornersEnabled: false,
-        gothCornerRadiusOverride: false,
-        gothCornerRadiusValue: 12,
-        borderEnabled: false,
-        borderColor: "surfaceText",
-        borderOpacity: 1.0,
-        borderThickness: 1,
-        widgetOutlineEnabled: false,
-        widgetOutlineColor: "primary",
-        widgetOutlineOpacity: 1.0,
-        widgetOutlineThickness: 1,
-        fontScale: 1.0,
-        autoHide: false,
-        autoHideDelay: 250,
-        showOnWindowsOpen: false,
-        openOnOverview: false,
-        visible: true,
-        popupGapsAuto: true,
-        popupGapsManual: 4,
-        maximizeDetection: true,
-        scrollEnabled: true,
-        scrollXBehavior: "column",
-        scrollYBehavior: "workspace",
-        shadowIntensity: 0,
-        shadowOpacity: 60,
-        shadowColorMode: "text",
-        shadowCustomColor: "#000000",
-        clickThrough: false
-    }], onChange: "updateBarConfigs" },
+    barConfigs: {
+        def: [{
+            id: "default",
+            name: "Main Bar",
+            enabled: true,
+            position: 0,
+            screenPreferences: ["all"],
+            showOnLastDisplay: true,
+            leftWidgets: ["launcherButton", "workspaceSwitcher", "focusedWindow"],
+            centerWidgets: ["music", "clock", "weather"],
+            rightWidgets: ["systemTray", "clipboard", "cpuUsage", "memUsage", "notificationButton", "battery", "controlCenterButton"],
+            spacing: 4,
+            innerPadding: 4,
+            bottomGap: 0,
+            transparency: 1.0,
+            widgetTransparency: 1.0,
+            squareCorners: false,
+            noBackground: false,
+            gothCornersEnabled: false,
+            gothCornerRadiusOverride: false,
+            gothCornerRadiusValue: 12,
+            borderEnabled: false,
+            borderColor: "surfaceText",
+            borderOpacity: 1.0,
+            borderThickness: 1,
+            widgetOutlineEnabled: false,
+            widgetOutlineColor: "primary",
+            widgetOutlineOpacity: 1.0,
+            widgetOutlineThickness: 1,
+            fontScale: 1.0,
+            autoHide: false,
+            autoHideDelay: 250,
+            showOnWindowsOpen: false,
+            openOnOverview: false,
+            visible: true,
+            popupGapsAuto: true,
+            popupGapsManual: 4,
+            maximizeDetection: true,
+            scrollEnabled: true,
+            scrollXBehavior: "column",
+            scrollYBehavior: "workspace",
+            shadowIntensity: 0,
+            shadowOpacity: 60,
+            shadowColorMode: "text",
+            shadowCustomColor: "#000000",
+            clickThrough: false
+        }], onChange: "updateBarConfigs"
+    },
 
     desktopClockEnabled: { def: false },
     desktopClockStyle: { def: "analog" },
@@ -409,11 +437,13 @@ var SPEC = {
 
     desktopWidgetGroups: { def: [] },
 
-    builtInPluginSettings: { def: {} }
+    builtInPluginSettings: { def: {} },
+    launcherPluginVisibility: { def: {} },
+    launcherPluginOrder: { def: [] }
 };
 
 function getValidKeys() {
-    return Object.keys(SPEC).filter(function(k) { return SPEC[k].persist !== false; }).concat(["configVersion"]);
+    return Object.keys(SPEC).filter(function (k) { return SPEC[k].persist !== false; }).concat(["configVersion"]);
 }
 
 function set(root, key, value, saveFn, hooks) {

@@ -13,6 +13,12 @@ Singleton {
     property var _cachedVisibleApps: null
     property var _hiddenAppsSet: new Set()
 
+    property var _transformCache: ({})
+    property var _cachedDefaultSections: []
+    property var _cachedDefaultFlatModel: []
+    property bool _defaultCacheValid: false
+    property int cacheVersion: 0
+
     readonly property int maxResults: 10
     readonly property int frecencySampleSize: 10
 
@@ -43,6 +49,52 @@ Singleton {
         applications = DesktopEntries.applications.values;
         _cachedCategories = null;
         _cachedVisibleApps = null;
+        invalidateLauncherCache();
+    }
+
+    function invalidateLauncherCache() {
+        _transformCache = {};
+        _defaultCacheValid = false;
+        _cachedDefaultSections = [];
+        _cachedDefaultFlatModel = [];
+        cacheVersion++;
+    }
+
+    function getOrTransformApp(app, transformFn) {
+        const id = app.id || app.execString || app.exec || "";
+        if (!id)
+            return transformFn(app);
+        const cached = _transformCache[id];
+        if (cached) {
+            const currentIcon = app.icon || "";
+            const cachedSourceIcon = cached._sourceIcon || "";
+            if (currentIcon === cachedSourceIcon)
+                return cached;
+        }
+        const transformed = transformFn(app);
+        transformed._sourceIcon = app.icon || "";
+        _transformCache[id] = transformed;
+        return transformed;
+    }
+
+    function getCachedDefaultSections() {
+        if (!_defaultCacheValid)
+            return null;
+        return _cachedDefaultSections;
+    }
+
+    function setCachedDefaultSections(sections, flatModel) {
+        _cachedDefaultSections = sections.map(function (s) {
+            return Object.assign({}, s, {
+                items: s.items ? s.items.slice() : []
+            });
+        });
+        _cachedDefaultFlatModel = flatModel.slice();
+        _defaultCacheValid = true;
+    }
+
+    function isCacheValid() {
+        return _defaultCacheValid;
     }
 
     function _rebuildHiddenSet() {
@@ -68,9 +120,18 @@ Singleton {
         target: SessionData
         function onHiddenAppsChanged() {
             root._rebuildHiddenSet();
+            root.invalidateLauncherCache();
         }
         function onAppOverridesChanged() {
             root._cachedVisibleApps = null;
+            root.invalidateLauncherCache();
+        }
+    }
+
+    Connections {
+        target: AppUsageHistoryData
+        function onAppUsageRankingChanged() {
+            root.invalidateLauncherCache();
         }
     }
 
@@ -158,7 +219,8 @@ Singleton {
                 action: plugin.action,
                 categories: plugin.categories,
                 isCore: true,
-                builtInPluginId: pluginId
+                builtInPluginId: pluginId,
+                cornerIcon: plugin.cornerIcon
             });
         }
         return apps;
@@ -257,10 +319,10 @@ Singleton {
             PopoutService.focusOrToggleSettings();
             return true;
         case "notepad":
-            PopoutService.openNotepad();
+            PopoutService.toggleNotepad();
             return true;
         case "processlist":
-            PopoutService.showProcessListModal();
+            PopoutService.toggleProcessList();
             return true;
         }
         return false;
@@ -793,6 +855,21 @@ Singleton {
         return false;
     }
 
+    function getPluginPasteText(pluginId, item) {
+        if (typeof PluginService === "undefined")
+            return null;
+
+        const instance = PluginService.pluginInstances[pluginId];
+        if (!instance)
+            return null;
+
+        if (typeof instance.getPasteText === "function") {
+            return instance.getPasteText(item);
+        }
+
+        return null;
+    }
+
     function searchPluginItems(query) {
         if (typeof PluginService === "undefined")
             return [];
@@ -806,5 +883,53 @@ Singleton {
         }
 
         return allItems;
+    }
+
+    function getPluginLauncherCategories(pluginId) {
+        if (typeof PluginService === "undefined")
+            return [];
+
+        const instance = PluginService.pluginInstances[pluginId];
+        if (!instance)
+            return [];
+
+        if (typeof instance.getCategories !== "function")
+            return [];
+
+        try {
+            return instance.getCategories() || [];
+        } catch (e) {
+            console.warn("AppSearchService: Error getting categories from plugin", pluginId, ":", e);
+            return [];
+        }
+    }
+
+    function setPluginLauncherCategory(pluginId, categoryId) {
+        if (typeof PluginService === "undefined")
+            return;
+
+        const instance = PluginService.pluginInstances[pluginId];
+        if (!instance)
+            return;
+
+        if (typeof instance.setCategory !== "function")
+            return;
+
+        try {
+            instance.setCategory(categoryId);
+        } catch (e) {
+            console.warn("AppSearchService: Error setting category on plugin", pluginId, ":", e);
+        }
+    }
+
+    function pluginHasCategories(pluginId) {
+        if (typeof PluginService === "undefined")
+            return false;
+
+        const instance = PluginService.pluginInstances[pluginId];
+        if (!instance)
+            return false;
+
+        return typeof instance.getCategories === "function";
     }
 }

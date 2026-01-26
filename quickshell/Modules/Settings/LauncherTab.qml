@@ -355,6 +355,129 @@ Item {
 
             SettingsCard {
                 width: parent.width
+                iconName: "tune"
+                title: I18n.tr("Appearance", "launcher appearance settings")
+                settingKey: "dankLauncherV2Appearance"
+
+                Column {
+                    width: parent.width
+                    spacing: Theme.spacingM
+
+                    StyledText {
+                        text: I18n.tr("Size", "launcher size option")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceText
+                        font.weight: Font.Medium
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+
+                    Item {
+                        width: parent.width
+                        height: sizeGroup.implicitHeight
+                        clip: true
+
+                        DankButtonGroup {
+                            id: sizeGroup
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            buttonPadding: parent.width < 400 ? Theme.spacingS : Theme.spacingL
+                            minButtonWidth: parent.width < 400 ? 60 : 80
+                            textSize: parent.width < 400 ? Theme.fontSizeSmall : Theme.fontSizeMedium
+                            model: ["1", "2", "3", "4"]
+                            currentIndex: {
+                                switch (SettingsData.dankLauncherV2Size) {
+                                case "micro":
+                                    return 0;
+                                case "compact":
+                                    return 1;
+                                case "large":
+                                    return 3;
+                                default:
+                                    return 2;
+                                }
+                            }
+                            onSelectionChanged: (index, selected) => {
+                                if (!selected)
+                                    return;
+                                var sizes = ["micro", "compact", "medium", "large"];
+                                SettingsData.set("dankLauncherV2Size", sizes[index]);
+                            }
+                        }
+                    }
+                }
+
+                SettingsToggleRow {
+                    settingKey: "dankLauncherV2ShowFooter"
+                    tags: ["launcher", "footer", "hints", "shortcuts"]
+                    text: I18n.tr("Show Footer", "launcher footer visibility")
+                    description: I18n.tr("Show mode tabs and keyboard hints at the bottom.", "launcher footer description")
+                    checked: SettingsData.dankLauncherV2ShowFooter
+                    enabled: SettingsData.dankLauncherV2Size !== "micro"
+                    onToggled: checked => SettingsData.set("dankLauncherV2ShowFooter", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "dankLauncherV2BorderEnabled"
+                    tags: ["launcher", "border", "outline"]
+                    text: I18n.tr("Border", "launcher border option")
+                    checked: SettingsData.dankLauncherV2BorderEnabled
+                    onToggled: checked => SettingsData.set("dankLauncherV2BorderEnabled", checked)
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: Theme.spacingM
+                    visible: SettingsData.dankLauncherV2BorderEnabled
+
+                    SettingsSliderRow {
+                        settingKey: "dankLauncherV2BorderThickness"
+                        tags: ["launcher", "border", "thickness"]
+                        text: I18n.tr("Thickness", "border thickness")
+                        minimum: 1
+                        maximum: 6
+                        value: SettingsData.dankLauncherV2BorderThickness
+                        defaultValue: 2
+                        unit: "px"
+                        onSliderValueChanged: newValue => SettingsData.set("dankLauncherV2BorderThickness", newValue)
+                    }
+
+                    Column {
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        StyledText {
+                            text: I18n.tr("Color", "border color")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceText
+                            font.weight: Font.Medium
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+
+                        Item {
+                            width: parent.width
+                            height: borderColorGroup.implicitHeight
+                            clip: true
+
+                            DankButtonGroup {
+                                id: borderColorGroup
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                buttonPadding: parent.width < 400 ? Theme.spacingS : Theme.spacingL
+                                minButtonWidth: parent.width < 400 ? 50 : 70
+                                textSize: parent.width < 400 ? Theme.fontSizeSmall : Theme.fontSizeMedium
+                                model: [I18n.tr("Primary", "primary color"), I18n.tr("Secondary", "secondary color"), I18n.tr("Outline", "outline color"), I18n.tr("Text", "text color")]
+                                currentIndex: SettingsData.dankLauncherV2BorderColor === "secondary" ? 1 : SettingsData.dankLauncherV2BorderColor === "outline" ? 2 : SettingsData.dankLauncherV2BorderColor === "surfaceText" ? 3 : 0
+                                onSelectionChanged: (index, selected) => {
+                                    if (!selected)
+                                        return;
+                                    SettingsData.set("dankLauncherV2BorderColor", index === 1 ? "secondary" : index === 2 ? "outline" : index === 3 ? "surfaceText" : "primary");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            SettingsCard {
+                width: parent.width
                 iconName: "open_in_new"
                 title: I18n.tr("Niri Integration").replace("Niri", "niri")
                 visible: CompositorService.isNiri
@@ -458,6 +581,227 @@ Item {
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            SettingsCard {
+                id: pluginVisibilityCard
+                width: parent.width
+                iconName: "filter_list"
+                title: I18n.tr("Plugin Visibility")
+                settingKey: "pluginVisibility"
+
+                property var allLauncherPlugins: {
+                    SettingsData.launcherPluginVisibility;
+                    SettingsData.launcherPluginOrder;
+                    var plugins = [];
+                    var builtIn = AppSearchService.getBuiltInLauncherPlugins() || {};
+                    for (var pluginId in builtIn) {
+                        var plugin = builtIn[pluginId];
+                        plugins.push({
+                            id: pluginId,
+                            name: plugin.name || pluginId,
+                            icon: plugin.cornerIcon || "extension",
+                            iconType: "material",
+                            isBuiltIn: true,
+                            trigger: AppSearchService.getBuiltInPluginTrigger(pluginId) || ""
+                        });
+                    }
+                    var thirdParty = PluginService.getLauncherPlugins() || {};
+                    for (var pluginId in thirdParty) {
+                        var plugin = thirdParty[pluginId];
+                        var rawIcon = plugin.icon || "extension";
+                        plugins.push({
+                            id: pluginId,
+                            name: plugin.name || pluginId,
+                            icon: rawIcon.startsWith("material:") ? rawIcon.substring(9) : rawIcon.startsWith("unicode:") ? rawIcon.substring(8) : rawIcon,
+                            iconType: rawIcon.startsWith("unicode:") ? "unicode" : "material",
+                            isBuiltIn: false,
+                            trigger: PluginService.getPluginTrigger(pluginId) || ""
+                        });
+                    }
+                    return SettingsData.getOrderedLauncherPlugins(plugins);
+                }
+
+                function reorderPlugin(fromIndex, toIndex) {
+                    if (fromIndex === toIndex)
+                        return;
+                    var currentOrder = allLauncherPlugins.map(p => p.id);
+                    var item = currentOrder.splice(fromIndex, 1)[0];
+                    currentOrder.splice(toIndex, 0, item);
+                    SettingsData.setLauncherPluginOrder(currentOrder);
+                }
+
+                StyledText {
+                    width: parent.width
+                    text: I18n.tr("Control which plugins appear in 'All' mode without requiring a trigger prefix. Drag to reorder.")
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.surfaceVariantText
+                    wrapMode: Text.WordWrap
+                }
+
+                Column {
+                    id: pluginVisibilityColumn
+                    width: parent.width
+                    spacing: Theme.spacingS
+
+                    Repeater {
+                        model: pluginVisibilityCard.allLauncherPlugins
+
+                        delegate: Item {
+                            id: visibilityDelegateItem
+                            required property var modelData
+                            required property int index
+
+                            property bool held: pluginDragArea.pressed
+                            property real originalY: y
+
+                            width: pluginVisibilityColumn.width
+                            height: 52
+                            z: held ? 2 : 1
+
+                            Rectangle {
+                                id: visibilityDelegate
+                                width: parent.width
+                                height: 52
+                                radius: Theme.cornerRadius
+                                color: visibilityDelegateItem.held ? Theme.surfaceHover : Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, 0.3)
+
+                                Row {
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 28
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: Theme.spacingM
+
+                                    Item {
+                                        width: Theme.iconSize
+                                        height: Theme.iconSize
+                                        anchors.verticalCenter: parent.verticalCenter
+
+                                        DankIcon {
+                                            anchors.centerIn: parent
+                                            visible: visibilityDelegateItem.modelData.iconType !== "unicode"
+                                            name: visibilityDelegateItem.modelData.icon
+                                            size: Theme.iconSize
+                                            color: Theme.primary
+                                        }
+
+                                        StyledText {
+                                            anchors.centerIn: parent
+                                            visible: visibilityDelegateItem.modelData.iconType === "unicode"
+                                            text: visibilityDelegateItem.modelData.icon
+                                            font.pixelSize: Theme.iconSize
+                                            color: Theme.primary
+                                        }
+                                    }
+
+                                    Column {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 2
+
+                                        Row {
+                                            spacing: Theme.spacingS
+
+                                            StyledText {
+                                                text: visibilityDelegateItem.modelData.name
+                                                font.pixelSize: Theme.fontSizeMedium
+                                                color: Theme.surfaceText
+                                            }
+
+                                            Rectangle {
+                                                visible: visibilityDelegateItem.modelData.isBuiltIn
+                                                width: dmsBadgeLabel.implicitWidth + Theme.spacingS
+                                                height: 16
+                                                radius: 8
+                                                color: Theme.primaryContainer
+                                                anchors.verticalCenter: parent.verticalCenter
+
+                                                StyledText {
+                                                    id: dmsBadgeLabel
+                                                    anchors.centerIn: parent
+                                                    text: "DMS"
+                                                    font.pixelSize: Theme.fontSizeSmall - 2
+                                                    color: Theme.primary
+                                                }
+                                            }
+                                        }
+
+                                        StyledText {
+                                            text: visibilityDelegateItem.modelData.trigger ? I18n.tr("Trigger: %1").arg(visibilityDelegateItem.modelData.trigger) : I18n.tr("No trigger")
+                                            font.pixelSize: Theme.fontSizeSmall
+                                            color: Theme.surfaceVariantText
+                                        }
+                                    }
+                                }
+
+                                DankToggle {
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: Theme.spacingM
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    checked: SettingsData.getPluginAllowWithoutTrigger(visibilityDelegateItem.modelData.id)
+                                    onToggled: function (isChecked) {
+                                        SettingsData.setPluginAllowWithoutTrigger(visibilityDelegateItem.modelData.id, isChecked);
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                id: pluginDragArea
+                                anchors.left: parent.left
+                                anchors.top: parent.top
+                                width: 28
+                                height: parent.height
+                                hoverEnabled: true
+                                cursorShape: Qt.SizeVerCursor
+                                drag.target: visibilityDelegateItem.held ? visibilityDelegateItem : undefined
+                                drag.axis: Drag.YAxis
+                                preventStealing: true
+
+                                onPressed: {
+                                    visibilityDelegateItem.originalY = visibilityDelegateItem.y;
+                                }
+
+                                onReleased: {
+                                    if (!drag.active) {
+                                        visibilityDelegateItem.y = visibilityDelegateItem.originalY;
+                                        return;
+                                    }
+                                    const spacing = Theme.spacingS;
+                                    const itemH = visibilityDelegateItem.height + spacing;
+                                    var newIndex = Math.round(visibilityDelegateItem.y / itemH);
+                                    newIndex = Math.max(0, Math.min(newIndex, pluginVisibilityCard.allLauncherPlugins.length - 1));
+                                    pluginVisibilityCard.reorderPlugin(visibilityDelegateItem.index, newIndex);
+                                    visibilityDelegateItem.y = visibilityDelegateItem.originalY;
+                                }
+                            }
+
+                            DankIcon {
+                                x: Theme.spacingXS
+                                anchors.verticalCenter: parent.verticalCenter
+                                name: "drag_indicator"
+                                size: 18
+                                color: Theme.outline
+                                opacity: pluginDragArea.containsMouse || pluginDragArea.pressed ? 1 : 0.5
+                            }
+
+                            Behavior on y {
+                                enabled: !pluginDragArea.pressed && !pluginDragArea.drag.active
+                                NumberAnimation {
+                                    duration: Theme.shortDuration
+                                    easing.type: Theme.standardEasing
+                                }
+                            }
+                        }
+                    }
+
+                    StyledText {
+                        width: parent.width
+                        text: I18n.tr("No launcher plugins installed.")
+                        font.pixelSize: Theme.fontSizeMedium
+                        color: Theme.surfaceVariantText
+                        horizontalAlignment: Text.AlignHCenter
+                        visible: pluginVisibilityCard.allLauncherPlugins.length === 0
                     }
                 }
             }

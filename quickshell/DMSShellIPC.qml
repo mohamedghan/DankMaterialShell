@@ -15,6 +15,7 @@ Item {
     required property var hyprKeybindsModalLoader
     required property var dankBarRepeater
     required property var hyprlandOverviewLoader
+    required property var workspaceRenameModalLoader
 
     function getFirstBar() {
         if (!root.dankBarRepeater || root.dankBarRepeater.count === 0)
@@ -1025,6 +1026,167 @@ Item {
         target: "clipboard"
     }
 
+    // ! spotlight and launcher should be synonymous for backwards compat
+    IpcHandler {
+        function open(): string {
+            PopoutService.openDankLauncherV2();
+            return "LAUNCHER_OPEN_SUCCESS";
+        }
+
+        function close(): string {
+            PopoutService.closeDankLauncherV2();
+            return "LAUNCHER_CLOSE_SUCCESS";
+        }
+
+        function toggle(): string {
+            PopoutService.toggleDankLauncherV2();
+            return "LAUNCHER_TOGGLE_SUCCESS";
+        }
+
+        function openWith(mode: string): string {
+            if (!mode)
+                return "LAUNCHER_OPEN_FAILED: No mode specified";
+            PopoutService.openDankLauncherV2WithMode(mode);
+            return `LAUNCHER_OPEN_SUCCESS: ${mode}`;
+        }
+
+        function toggleWith(mode: string): string {
+            if (!mode)
+                return "LAUNCHER_TOGGLE_FAILED: No mode specified";
+            PopoutService.toggleDankLauncherV2WithMode(mode);
+            return `LAUNCHER_TOGGLE_SUCCESS: ${mode}`;
+        }
+
+        function openQuery(query: string): string {
+            PopoutService.openDankLauncherV2WithQuery(query);
+            return "LAUNCHER_OPEN_QUERY_SUCCESS";
+        }
+
+        function toggleQuery(query: string): string {
+            PopoutService.toggleDankLauncherV2WithQuery(query);
+            return "LAUNCHER_TOGGLE_QUERY_SUCCESS";
+        }
+
+        target: "launcher"
+    }
+
+    // ! spotlight and launcher should be synonymous for backwards compat
+    IpcHandler {
+        function open(): string {
+            PopoutService.openDankLauncherV2();
+            return "SPOTLIGHT_OPEN_SUCCESS";
+        }
+
+        function close(): string {
+            PopoutService.closeDankLauncherV2();
+            return "SPOTLIGHT_CLOSE_SUCCESS";
+        }
+
+        function toggle(): string {
+            PopoutService.toggleDankLauncherV2();
+            return "SPOTLIGHT_TOGGLE_SUCCESS";
+        }
+
+        function openWith(mode: string): string {
+            if (!mode)
+                return "SPOTLIGHT_OPEN_FAILED: No mode specified";
+            PopoutService.openDankLauncherV2WithMode(mode);
+            return `SPOTLIGHT_OPEN_SUCCESS: ${mode}`;
+        }
+
+        function toggleWith(mode: string): string {
+            if (!mode)
+                return "SPOTLIGHT_TOGGLE_FAILED: No mode specified";
+            PopoutService.toggleDankLauncherV2WithMode(mode);
+            return `SPOTLIGHT_TOGGLE_SUCCESS: ${mode}`;
+        }
+
+        function openQuery(query: string): string {
+            PopoutService.openDankLauncherV2WithQuery(query);
+            return "SPOTLIGHT_OPEN_QUERY_SUCCESS";
+        }
+
+        function toggleQuery(query: string): string {
+            PopoutService.toggleDankLauncherV2WithQuery(query);
+            return "SPOTLIGHT_TOGGLE_QUERY_SUCCESS";
+        }
+
+        target: "spotlight"
+    }
+
+    IpcHandler {
+        function info(message: string): string {
+            if (!message)
+                return "ERROR: No message specified";
+
+            ToastService.showInfo(message);
+            return "TOAST_INFO_SUCCESS";
+        }
+
+        function infoWith(message: string, details: string, command: string, category: string): string {
+            if (!message)
+                return "ERROR: No message specified";
+
+            ToastService.showInfo(message, details, command, category);
+            return "TOAST_INFO_SUCCESS";
+        }
+
+        function warn(message: string): string {
+            if (!message)
+                return "ERROR: No message specified";
+
+            ToastService.showWarning(message);
+            return "TOAST_WARN_SUCCESS";
+        }
+
+        function warnWith(message: string, details: string, command: string, category: string): string {
+            if (!message)
+                return "ERROR: No message specified";
+
+            ToastService.showWarning(message, details, command, category);
+            return "TOAST_WARN_SUCCESS";
+        }
+
+        function error(message: string): string {
+            if (!message)
+                return "ERROR: No message specified";
+
+            ToastService.showError(message);
+            return "TOAST_ERROR_SUCCESS";
+        }
+
+        function errorWith(message: string, details: string, command: string, category: string): string {
+            if (!message)
+                return "ERROR: No message specified";
+
+            ToastService.showError(message, details, command, category);
+            return "TOAST_ERROR_SUCCESS";
+        }
+
+        function hide(): string {
+            ToastService.hideToast();
+            return "TOAST_HIDE_SUCCESS";
+        }
+
+        function dismiss(category: string): string {
+            if (!category)
+                return "ERROR: No category specified";
+
+            ToastService.dismissCategory(category);
+            return "TOAST_DISMISS_SUCCESS";
+        }
+
+        function status(): string {
+            if (!ToastService.toastVisible)
+                return "hidden";
+
+            const levels = ["info", "warn", "error"];
+            return `visible:${levels[ToastService.currentLevel]}:${ToastService.currentMessage}`;
+        }
+
+        target: "toast"
+    }
+
     IpcHandler {
         function open(): string {
             FirstLaunchService.showWelcome();
@@ -1203,5 +1365,41 @@ Item {
         }
 
         target: "desktopWidget"
+    }
+
+    IpcHandler {
+        function open(): string {
+            root.workspaceRenameModalLoader.active = true;
+            if (root.workspaceRenameModalLoader.item) {
+                const ws = NiriService.workspaces[NiriService.focusedWorkspaceId];
+                root.workspaceRenameModalLoader.item.show(ws?.name || "");
+                return "WORKSPACE_RENAME_MODAL_OPENED";
+            }
+            return "WORKSPACE_RENAME_MODAL_NOT_FOUND";
+        }
+
+        function close(): string {
+            if (root.workspaceRenameModalLoader.item) {
+                root.workspaceRenameModalLoader.item.hide();
+                return "WORKSPACE_RENAME_MODAL_CLOSED";
+            }
+            return "WORKSPACE_RENAME_MODAL_NOT_FOUND";
+        }
+
+        function toggle(): string {
+            root.workspaceRenameModalLoader.active = true;
+            if (root.workspaceRenameModalLoader.item) {
+                if (root.workspaceRenameModalLoader.item.visible) {
+                    root.workspaceRenameModalLoader.item.hide();
+                    return "WORKSPACE_RENAME_MODAL_CLOSED";
+                }
+                const ws = NiriService.workspaces[NiriService.focusedWorkspaceId];
+                root.workspaceRenameModalLoader.item.show(ws?.name || "");
+                return "WORKSPACE_RENAME_MODAL_OPENED";
+            }
+            return "WORKSPACE_RENAME_MODAL_NOT_FOUND";
+        }
+
+        target: "workspace-rename"
     }
 }

@@ -46,11 +46,24 @@ Item {
 
     function getRealWorkspaces() {
         if (CompositorService.isNiri) {
+            const fallbackWorkspaces = [
+                {
+                    "id": 1,
+                    "idx": 0,
+                    "name": ""
+                },
+                {
+                    "id": 2,
+                    "idx": 1,
+                    "name": ""
+                }
+            ];
             if (!barWindow.screenName || SettingsData.workspaceFollowFocus) {
-                return NiriService.getCurrentOutputWorkspaceNumbers();
+                const currentWorkspaces = NiriService.getCurrentOutputWorkspaces();
+                return currentWorkspaces.length > 0 ? currentWorkspaces : fallbackWorkspaces;
             }
-            const workspaces = NiriService.allWorkspaces.filter(ws => ws.output === barWindow.screenName).map(ws => ws.idx + 1);
-            return workspaces.length > 0 ? workspaces : [1, 2];
+            const workspaces = NiriService.allWorkspaces.filter(ws => ws.output === barWindow.screenName);
+            return workspaces.length > 0 ? workspaces : fallbackWorkspaces;
         } else if (CompositorService.isHyprland) {
             const workspaces = Hyprland.workspaces?.values || [];
 
@@ -118,7 +131,7 @@ Item {
                 return NiriService.getCurrentWorkspaceNumber();
             }
             const activeWs = NiriService.allWorkspaces.find(ws => ws.output === barWindow.screenName && ws.is_active);
-            return activeWs ? activeWs.idx + 1 : 1;
+            return activeWs ? activeWs.idx : 1;
         } else if (CompositorService.isHyprland) {
             const monitors = Hyprland.monitors?.values || [];
             const currentMonitor = monitors.find(monitor => monitor.name === barWindow.screenName);
@@ -151,12 +164,16 @@ Item {
 
         if (CompositorService.isNiri) {
             const currentWs = getCurrentWorkspace();
-            const currentIndex = realWorkspaces.findIndex(ws => ws === currentWs);
+            const currentIndex = realWorkspaces.findIndex(ws => ws && ws.idx === currentWs);
             const validIndex = currentIndex === -1 ? 0 : currentIndex;
             const nextIndex = direction > 0 ? Math.min(validIndex + 1, realWorkspaces.length - 1) : Math.max(validIndex - 1, 0);
 
             if (nextIndex !== validIndex) {
-                NiriService.switchToWorkspace(realWorkspaces[nextIndex] - 1);
+                const nextWorkspace = realWorkspaces[nextIndex];
+                if (!nextWorkspace || nextWorkspace.idx === undefined) {
+                    return;
+                }
+                NiriService.switchToWorkspace(nextWorkspace.idx);
             }
         } else if (CompositorService.isHyprland) {
             const currentWs = getCurrentWorkspace();
@@ -285,6 +302,7 @@ Item {
             "workspaceSwitcher": workspaceSwitcherComponent,
             "focusedWindow": focusedWindowComponent,
             "runningApps": runningAppsComponent,
+            "appsDock": appsDockComponent,
             "clock": clockComponent,
             "music": mediaComponent,
             "weather": weatherComponent,
@@ -326,6 +344,7 @@ Item {
             "workspaceSwitcherComponent": workspaceSwitcherComponent,
             "focusedWindowComponent": focusedWindowComponent,
             "runningAppsComponent": runningAppsComponent,
+            "appsDockComponent": appsDockComponent,
             "clockComponent": clockComponent,
             "mediaComponent": mediaComponent,
             "weatherComponent": weatherComponent,
@@ -632,6 +651,21 @@ Item {
         id: runningAppsComponent
 
         RunningApps {
+            widgetThickness: barWindow.widgetThickness
+            barThickness: barWindow.effectiveBarThickness
+            barSpacing: barConfig?.spacing ?? 4
+            section: topBarContent.getWidgetSection(parent)
+            parentScreen: barWindow.screen
+            topBar: topBarContent
+            barConfig: topBarContent.barConfig
+            isAutoHideBar: topBarContent.barConfig?.autoHide ?? false
+        }
+    }
+
+    Component {
+        id: appsDockComponent
+
+        AppsDock {
             widgetThickness: barWindow.widgetThickness
             barThickness: barWindow.effectiveBarThickness
             barSpacing: barConfig?.spacing ?? 4
